@@ -1,0 +1,43 @@
+/* ===== Element Plus 主题色 ===== */
+:root {
+  --el-color-primary: #7B5EA7;
+  --el-color-primary-light-3: #9f83c2;
+  --el-color-primary-light-5: #bda8d3;
+  --el-color-primary-light-7: #dacceb;
+  --el-color-primary-light-8: #e8e0f2;
+  --el-color-primary-light-9: #f5f1fa;
+  --el-color-primary-dark-2: #634b86;
+
+  /* ===== 侧边栏（浅色，与 CP-Admin 截图一致） ===== */
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #4b5563;
+  --sidebar-active-text: #7B5EA7;
+  --sidebar-active-bg: #f5f1fa;
+  --sidebar-hover-bg: #f9f8fe;
+  --sidebar-border: #ebeef5;
+  --sidebar-width: 210px;
+  --sidebar-logo-bg: #ffffff;
+
+  /* ===== 顶栏 ===== */
+  --topbar-bg: #ffffff;
+  --topbar-height: 52px;
+  --topbar-border: #ebeef5;
+
+  /* ===== 演示横幅 ===== */
+  --demo-banner-bg: #fffbe6;
+  --demo-banner-text: #7c5a00;
+  --demo-banner-border: #ffe58f;
+  --demo-banner-height: 32px;
+
+  /* ===== 风险等级 ===== */
+  --risk-l1-color: #52c41a;
+  --risk-l2-color: #1890ff;
+  --risk-l3-color: #fa8c16;
+  --risk-l4-color: #f5222d;
+
+  /* ===== 内容区 ===== */
+  --content-bg: #f5f6f8;
+  --card-bg: #ffffff;
+  --card-border: #e8eaf0;
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
