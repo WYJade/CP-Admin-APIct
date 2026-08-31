@@ -15,20 +15,21 @@
     <div class="edit-body">
       <!-- 左侧：角色详情 -->
       <div class="detail-panel">
-        <div class="panel-title">角色详情</div>
-        <el-form :model="form" label-position="top">
-          <el-form-item label="角色名称" required>
-            <el-input v-model="form.name" placeholder="yqtest" />
+        <div class="panel-section-title">角色详情</div>
+        <el-form :model="form" label-position="top" class="role-form">
+          <el-form-item required>
+            <template #label><span class="form-label"><span class="req">*</span> 角色名称</span></template>
+            <el-input v-model="form.name" placeholder="请输入角色名称" />
           </el-form-item>
           <el-form-item label="描述">
-            <el-input v-model="form.description" type="textarea" :rows="4" placeholder="描述角色的用途和权限范围..." />
+            <el-input v-model="form.description" type="textarea" :rows="5" placeholder="描述角色的用途和权限范围..." />
           </el-form-item>
-          <el-form-item label="* 状态">
-            <el-radio-group v-model="form.status" class="status-group">
-              <el-radio value="active">
-                <span class="status-active">启用</span>
-              </el-radio>
-              <el-radio value="inactive">未启用</el-radio>
+          <el-form-item required>
+            <template #label><span class="form-label"><span class="req">*</span> 状态</span></template>
+            <el-radio-group v-model="form.status">
+              <el-radio value="active"><span class="status-active">启用</span></el-radio>
+              <br />
+              <el-radio value="inactive" style="margin-top:8px">未启用</el-radio>
             </el-radio-group>
           </el-form-item>
         </el-form>
@@ -36,79 +37,43 @@
 
       <!-- 右侧：权限配置 -->
       <div class="permission-panel">
-        <div class="panel-header">
-          <div class="panel-title">权限配置</div>
-          <div class="panel-header-actions">
-            <el-button size="small" text @click="selectAll">全选</el-button>
+        <div class="perm-panel-head">
+          <span class="panel-section-title">权限配置</span>
+          <div class="perm-panel-actions">
+            <el-button size="small" text type="primary" @click="selectAll">全选</el-button>
             <el-button size="small" text @click="clearAll">清空</el-button>
           </div>
         </div>
 
-        <!-- 两个页签 -->
-        <el-tabs v-model="activeTab" class="permission-tabs">
-          <!-- 菜单功能 -->
-          <el-tab-pane label="菜单功能" name="menu">
-            <div class="tree-container">
-              <el-tree
-                ref="menuTreeRef"
-                :data="cpMenuTree"
-                show-checkbox
-                node-key="id"
-                :default-checked-keys="form.menuPermissions"
-                :default-expanded-keys="expandedMenuKeys"
-                :props="{ label: 'label', children: 'children' }"
-                @check="onMenuCheck"
-                class="cp-tree"
-              >
-                <template #default="{ node, data }">
-                  <div class="tree-node" :class="`node-${data.type}`">
-                    <span class="node-label">{{ node.label }}</span>
-                  </div>
-                </template>
-              </el-tree>
-            </div>
-          </el-tab-pane>
+        <!-- 单一页签：菜单功能/API权限 -->
+        <div class="perm-tab-bar">
+          <span class="perm-tab-label active">菜单功能/API权限</span>
+        </div>
 
-          <!-- API权限 -->
-          <el-tab-pane label="API权限" name="api">
-            <div class="tree-container">
-              <el-tree
-                ref="apiTreeRef"
-                :data="cpApiTree"
-                show-checkbox
-                node-key="id"
-                :default-checked-keys="form.apiPermissions"
-                :default-expanded-keys="expandedApiKeys"
-                :props="{ label: 'label', children: 'children' }"
-                @check="onApiCheck"
-                class="cp-tree"
-              >
-                <template #default="{ node, data }">
-                  <div class="tree-node" :class="`node-${data.type}`">
-                    <span v-if="data.type === 'api'" class="method-badge" :class="`method-${data.method?.toLowerCase()}`">
-                      {{ data.method }}
-                    </span>
-                    <span class="node-label">{{ data.type === 'api' ? data.path : node.label }}</span>
-                    <span v-if="data.riskLevel" class="risk-badge" :class="`risk-${data.riskLevel?.toLowerCase()}`">
-                      {{ data.riskLevel }}
-                    </span>
-                  </div>
-                </template>
-              </el-tree>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+        <!-- 权限树 -->
+        <el-scrollbar class="tree-scroll">
+          <div class="tree-body">
+            <TreeNode
+              v-for="node in cpMenuTree"
+              :key="node.id"
+              :node="node"
+              :checked-ids="form.menuPermissions"
+              :depth="0"
+              @toggle-check="onToggleCheck"
+            />
+          </div>
+        </el-scrollbar>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElCheckbox } from 'element-plus'
 import { useRolesStore } from '@/stores/roles'
-import { cpMenuTree, cpApiTree } from '@/mock/menuTree'
+import { cpMenuTree, type MenuNode } from '@/mock/menuTree'
 
 const router = useRouter()
 const route = useRoute()
@@ -116,10 +81,6 @@ const rolesStore = useRolesStore()
 
 const roleId = computed(() => route.params.id as string | undefined)
 const isNew = computed(() => !roleId.value || roleId.value === 'new')
-
-const menuTreeRef = ref()
-const apiTreeRef = ref()
-const activeTab = ref('menu')
 
 const form = ref({
   name: '',
@@ -130,10 +91,6 @@ const form = ref({
   menuPermissions: [] as string[],
   apiPermissions: [] as string[]
 })
-
-// 默认展开第一层
-const expandedMenuKeys = cpMenuTree.map(n => n.id)
-const expandedApiKeys = cpApiTree.map(n => n.id)
 
 onMounted(() => {
   if (!isNew.value && roleId.value) {
@@ -152,52 +109,29 @@ onMounted(() => {
   }
 })
 
-function onMenuCheck(_: any, { checkedKeys }: { checkedKeys: string[] }) {
-  form.value.menuPermissions = checkedKeys
+function onToggleCheck(id: string, checked: boolean) {
+  const idx = form.value.menuPermissions.indexOf(id)
+  if (checked && idx === -1) form.value.menuPermissions.push(id)
+  else if (!checked && idx !== -1) form.value.menuPermissions.splice(idx, 1)
 }
 
-function onApiCheck(_: any, { checkedKeys }: { checkedKeys: string[] }) {
-  form.value.apiPermissions = checkedKeys
+function getAllIds(nodes: MenuNode[]): string[] {
+  return nodes.flatMap(n => [n.id, ...(n.children ? getAllIds(n.children) : []), ...(n.apiNames?.map(a => `api:${a.id}`) ?? [])])
 }
 
 function selectAll() {
-  if (activeTab.value === 'menu') {
-    menuTreeRef.value?.setCheckedNodes(getAllNodes(cpMenuTree))
-    form.value.menuPermissions = getAllIds(cpMenuTree)
-  } else {
-    apiTreeRef.value?.setCheckedNodes(getAllNodes(cpApiTree))
-    form.value.apiPermissions = getAllIds(cpApiTree)
-  }
+  form.value.menuPermissions = getAllIds(cpMenuTree)
 }
 
 function clearAll() {
-  if (activeTab.value === 'menu') {
-    menuTreeRef.value?.setCheckedKeys([])
-    form.value.menuPermissions = []
-  } else {
-    apiTreeRef.value?.setCheckedKeys([])
-    form.value.apiPermissions = []
-  }
-}
-
-function getAllNodes(nodes: any[]): any[] {
-  return nodes.flatMap(n => [n, ...(n.children ? getAllNodes(n.children) : [])])
-}
-
-function getAllIds(nodes: any[]): string[] {
-  return nodes.flatMap(n => [n.id, ...(n.children ? getAllIds(n.children) : [])])
+  form.value.menuPermissions = []
 }
 
 function saveRole() {
-  if (!form.value.name.trim()) {
-    ElMessage.warning('请填写角色名称')
-    return
-  }
-  // Derive modules from selected menu permissions
+  if (!form.value.name.trim()) { ElMessage.warning('请填写角色名称'); return }
   const moduleLabels = cpMenuTree
     .filter(m => form.value.menuPermissions.some(id => id === m.id || getAllIds(m.children || []).includes(id)))
     .map(m => m.label)
-
   if (isNew.value) {
     rolesStore.create({ ...form.value, modules: moduleLabels })
     ElMessage.success('角色创建成功')
@@ -207,58 +141,274 @@ function saveRole() {
   }
   router.push('/permission/roles')
 }
+
+// ─────────────────────────────────────────────────
+// TreeNode 组件（递归渲染，支持 action 节点的左右两栏）
+// ─────────────────────────────────────────────────
+const TreeNode = defineComponent({
+  name: 'TreeNode',
+  props: {
+    node: { type: Object as () => MenuNode, required: true },
+    checkedIds: { type: Array as () => string[], required: true },
+    depth: { type: Number, default: 0 }
+  },
+  emits: ['toggle-check'],
+  setup(props, { emit }) {
+    const expanded = ref(props.depth < 2) // 默认展开前两层
+
+    function isChecked(id: string) { return props.checkedIds.includes(id) }
+
+    function isIndeterminate(node: MenuNode): boolean {
+      if (!node.children?.length) return false
+      const allIds = getAllIds(node.children)
+      const checkedCount = allIds.filter(id => props.checkedIds.includes(id)).length
+      return checkedCount > 0 && checkedCount < allIds.length
+    }
+
+    function isAllChecked(node: MenuNode): boolean {
+      if (!node.children?.length) return isChecked(node.id)
+      return getAllIds(node.children).every(id => props.checkedIds.includes(id))
+    }
+
+    function toggleNode(node: MenuNode) {
+      const allIds = getAllIds(node.children || [])
+      const selfId = node.id
+      const shouldCheck = !isAllChecked(node)
+      ;[selfId, ...allIds].forEach(id => emit('toggle-check', id, shouldCheck))
+    }
+
+    function toggleSelf(id: string, checked: boolean) {
+      emit('toggle-check', id, checked)
+    }
+
+    return () => {
+      const { node, depth } = props
+      const hasChildren = !!(node.children?.length)
+      const isModule = node.type === 'module'
+      const isMenu = node.type === 'menu'
+      const isAction = node.type === 'action'
+
+      // ── 行容器样式 ──
+      const rowStyle: Record<string, string> = {
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: '34px',
+        padding: '2px 0',
+        paddingLeft: `${depth * 20 + 8}px`,
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+      if (isModule) {
+        rowStyle.background = 'var(--el-color-primary-light-9)'
+        rowStyle.borderBottom = '1px solid var(--el-color-primary-light-7)'
+        rowStyle.fontWeight = '700'
+        rowStyle.fontSize = '13.5px'
+      }
+
+      // ── 展开/折叠箭头 ──
+      const arrow = hasChildren
+        ? h('span', {
+            style: { width: '16px', flexShrink: '0', textAlign: 'center', color: '#909399', fontSize: '12px', transition: 'transform 0.2s', display: 'inline-block', transform: expanded.value ? 'rotate(90deg)' : 'rotate(0deg)' },
+            onClick: (e: Event) => { e.stopPropagation(); expanded.value = !expanded.value }
+          }, '▶')
+        : h('span', { style: { width: '16px', flexShrink: '0' } })
+
+      // ── 复选框 ──
+      const checkbox = h(ElCheckbox, {
+        modelValue: isAllChecked(node),
+        indeterminate: isIndeterminate(node),
+        style: { marginRight: '6px' },
+        onClick: (e: Event) => e.stopPropagation(),
+        onChange: () => toggleNode(node),
+      })
+
+      // ── 标签 ──
+      const label = h('span', {
+        style: { fontSize: isModule ? '13.5px' : '13px', color: isModule ? '#1a1a2e' : isAction ? '#606266' : '#303133' },
+        onClick: () => { if (hasChildren) expanded.value = !expanded.value }
+      }, node.label)
+
+      // ── 当前节点行 ──
+      const row = h('div', { style: rowStyle }, [arrow, checkbox, label])
+
+      // ── 子节点渲染 ──
+      if (!expanded.value || !hasChildren) return h('div', [row])
+
+      // 如果当前节点是 menu，且子节点都是 action，使用左右双栏布局
+      const allActions = node.children!.every(c => c.type === 'action')
+
+      if (isMenu && allActions) {
+        // 左栏：功能按钮；右栏：对应 API 名称
+        const leftCol = h('div', {
+          style: { flex: '1', borderRight: '1px solid #f0f2f5', padding: '6px 0 6px 0' }
+        }, node.children!.map(action =>
+          h('div', {
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              minHeight: '32px',
+              padding: `2px 8px 2px ${(depth + 1) * 20 + 8}px`,
+              borderBottom: '1px solid #fafafa',
+            }
+          }, [
+            h(ElCheckbox, {
+              modelValue: isChecked(action.id),
+              style: { marginRight: '6px' },
+              onChange: (v: boolean) => emit('toggle-check', action.id, v)
+            }),
+            h('span', { style: { fontSize: '13px', color: '#303133' } }, action.label)
+          ])
+        ))
+
+        const rightCol = h('div', {
+          style: { flex: '1', padding: '6px 0 6px 0' }
+        }, node.children!.map(action => {
+          const apis = action.apiNames ?? []
+          return h('div', {
+            style: {
+              minHeight: '32px',
+              padding: `2px 8px`,
+              borderBottom: '1px solid #fafafa',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: '2px'
+            }
+          }, apis.length > 0
+            ? apis.map(api =>
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0' } }, [
+                  h(ElCheckbox, {
+                    modelValue: isChecked(`api:${api.id}`),
+                    onChange: (v: boolean) => emit('toggle-check', `api:${api.id}`, v)
+                  }),
+                  h('span', { style: { fontSize: '12px', color: '#606266' } }, api.name)
+                ])
+              )
+            : [h('span', { style: { fontSize: '12px', color: '#c0c4cc', paddingLeft: '4px' } }, '—')]
+          )
+        }))
+
+        // 表头行
+        const colHeader = h('div', {
+          style: {
+            display: 'flex',
+            borderBottom: '1px solid #ebeef5',
+            background: '#fafbfc',
+          }
+        }, [
+          h('div', { style: { flex: '1', padding: '5px 8px 5px ' + ((depth + 1) * 20 + 8 + 28) + 'px', fontSize: '12px', fontWeight: '600', color: '#909399', borderRight: '1px solid #f0f2f5' } }, '功能按钮'),
+          h('div', { style: { flex: '1', padding: '5px 8px', fontSize: '12px', fontWeight: '600', color: '#909399' } }, 'API 名称'),
+        ])
+
+        const twoCol = h('div', {
+          style: { border: '1px solid #ebeef5', borderRadius: '4px', margin: `4px ${(depth + 1) * 20 - 12}px 6px ${(depth + 1) * 20 + 8}px`, overflow: 'hidden' }
+        }, [
+          colHeader,
+          h('div', { style: { display: 'flex' } }, [leftCol, rightCol])
+        ])
+
+        return h('div', [row, twoCol])
+      }
+
+      // 普通递归渲染
+      const children = node.children!.map(child =>
+        h(TreeNode, {
+          key: child.id,
+          node: child,
+          checkedIds: props.checkedIds,
+          depth: depth + 1,
+          onToggleCheck: (id: string, checked: boolean) => emit('toggle-check', id, checked)
+        })
+      )
+
+      return h('div', [row, ...children])
+    }
+  }
+})
 </script>
 
 <style scoped>
-.role-edit { display: flex; flex-direction: column; gap: 0; height: 100%; }
-.edit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.edit-header h2 { font-size: 18px; font-weight: 600; color: #303133; margin-bottom: 2px; }
+.role-edit { display: flex; flex-direction: column; height: 100%; }
+.edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.edit-header h2 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
 .subtitle { font-size: 13px; color: #909399; }
 .header-actions { display: flex; gap: 10px; }
-.edit-body { display: flex; gap: 20px; flex: 1; }
-.detail-panel { width: 280px; flex-shrink: 0; background: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 20px; }
-.permission-panel { flex: 1; background: #fff; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
-.panel-title { font-size: 15px; font-weight: 600; color: #303133; margin-bottom: 16px; }
-.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
-.panel-header-actions { display: flex; gap: 8px; }
-.status-group { display: flex; flex-direction: column; gap: 8px; }
+
+.edit-body { display: flex; gap: 20px; flex: 1; min-height: 0; }
+
+/* ── 左侧详情面板 ── */
+.detail-panel {
+  width: 280px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 20px;
+}
+.panel-section-title { font-size: 14px; font-weight: 700; color: #303133; display: block; margin-bottom: 16px; }
+.role-form :deep(.el-form-item__label) { font-size: 13px; color: #606266; }
+.form-label { font-size: 13px; color: #303133; }
+.req { color: #f56c6c; margin-right: 2px; }
 .status-active { color: var(--el-color-primary); font-weight: 500; }
-.permission-tabs { flex: 1; display: flex; flex-direction: column; }
-.permission-tabs :deep(.el-tabs__header) { padding: 0 20px; margin: 0; }
-.permission-tabs :deep(.el-tabs__content) { flex: 1; overflow: hidden; }
-.permission-tabs :deep(.el-tab-pane) { height: 100%; }
-.tree-container { height: calc(100vh - 320px); overflow-y: auto; padding: 12px 20px; }
-.cp-tree :deep(.el-tree-node__content) { height: auto; min-height: 34px; padding: 4px 0; }
-.cp-tree :deep(.el-tree-node__content:hover) { background: var(--el-color-primary-light-9); }
-.cp-tree :deep(.el-checkbox__input.is-checked .el-checkbox__inner) { background: var(--el-color-primary); border-color: var(--el-color-primary); }
-.cp-tree :deep(.el-tree-node.is-current > .el-tree-node__content) { background: var(--el-color-primary-light-9); }
 
-/* 模块级节点 (module) — 加粗白底 */
-.cp-tree :deep(.el-tree > .el-tree-node > .el-tree-node__content) {
-  background: var(--el-color-primary-light-9);
-  border-bottom: 1px solid var(--el-color-primary-light-7);
-  font-weight: 700;
-  font-size: 14px;
+/* ── 右侧权限面板 ── */
+.permission-panel {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
-.cp-tree :deep(.el-tree > .el-tree-node > .el-tree-node__content:hover) {
-  background: var(--el-color-primary-light-8);
+.perm-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 0;
+  flex-shrink: 0;
+}
+.perm-panel-actions { display: flex; gap: 6px; }
+
+/* 单一 tab 标签样式 */
+.perm-tab-bar {
+  padding: 0 20px;
+  border-bottom: 1px solid var(--card-border);
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+.perm-tab-label {
+  display: inline-block;
+  padding: 8px 2px 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #909399;
+  cursor: default;
+  border-bottom: 2px solid transparent;
+  margin-right: 24px;
+}
+.perm-tab-label.active {
+  color: var(--el-color-primary);
+  border-bottom-color: var(--el-color-primary);
 }
 
-.tree-node { display: flex; align-items: center; gap: 8px; width: 100%; }
-.node-label { font-size: 13px; color: #303133; }
-.node-module > .node-label { font-weight: 700; color: #1a1a2e; }
-.node-action > .node-label { color: #606266; }
+/* ── 树 ── */
+.tree-scroll { flex: 1; }
+.tree-body { padding: 8px 0 16px; }
 
-.method-badge { font-family: monospace; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 3px; min-width: 46px; text-align: center; flex-shrink: 0; }
-.method-get { background: #e8f5e9; color: #2e7d32; }
-.method-post { background: #e3f2fd; color: #1565c0; }
-.method-patch { background: #f3e5f5; color: #6a1b9a; }
-.method-put { background: #fff3e0; color: #e65100; }
-.method-delete { background: #ffebee; color: #c62828; }
-
-.risk-badge { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-left: auto; flex-shrink: 0; }
-.risk-l1 { background: #e8f5e9; color: #2e7d32; }
-.risk-l2 { background: #e3f2fd; color: #1565c0; }
-.risk-l3 { background: #fff3e0; color: #e65100; }
-.risk-l4 { background: #ffebee; color: #c62828; }
+/* 覆盖 element checkbox 样式使其紫色 */
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+}
+:deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner) {
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+}
 </style>
