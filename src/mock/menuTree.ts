@@ -6,6 +6,8 @@ export interface MenuNode {
   children?: MenuNode[]
   // 每个 action 节点对应的 API 名称列表（用于右侧 API 勾选列）
   apiNames?: ApiNameItem[]
+  // 标记此节点无需展示 API 权限列（如 Settings、System Management 本身）
+  noApi?: boolean
 }
 
 // API 名称条目
@@ -204,27 +206,82 @@ export const cpMenuTree: MenuNode[] = [
   },
   {
     id: 'user-profile', label: 'User Profile', type: 'module', children: [
-      { id: 'profile-settings', label: 'Settings', type: 'menu', children: [
-        { id: 'prof-view', label: 'View', type: 'action', apiNames: [
-          { id: 'api-prof-view', name: 'User Profile Query', action: 'order.read' }
+      { id: 'up-notification', label: 'Notification', type: 'menu', children: [
+        { id: 'up-notif-view', label: 'View', type: 'action', apiNames: [
+          { id: 'api-up-notif-view', name: 'User Notification List Query', action: 'order.read' }
         ]},
-        { id: 'prof-edit', label: 'Edit', type: 'action', apiNames: [
-          { id: 'api-prof-edit', name: 'Update User Profile', action: 'order.update' }
+        { id: 'up-notif-edit', label: 'Edit', type: 'action', apiNames: [
+          { id: 'api-up-notif-edit', name: 'Update Notification Preferences', action: 'order.update' }
+        ]}
+      ]},
+      { id: 'up-security', label: 'Security', type: 'menu', children: [
+        { id: 'up-sec-view', label: 'View', type: 'action', apiNames: [
+          { id: 'api-up-sec-view', name: 'User Security Settings Query', action: 'order.read' }
+        ]},
+        { id: 'up-sec-edit', label: 'Edit', type: 'action', apiNames: [
+          { id: 'api-up-sec-edit', name: 'Update User Security Settings', action: 'order.update' }
         ]}
       ]}
     ]
   },
   {
     id: 'system-management', label: 'System Management', type: 'module', children: [
-      { id: 'integrations', label: 'Integrations', type: 'menu', children: [
-        { id: 'int-view', label: 'View', type: 'action', apiNames: [
-          { id: 'api-int-view', name: 'Integration Configuration Query', action: 'order.read' }
-        ]},
-        { id: 'int-configure', label: 'Configure', type: 'action', apiNames: [
-          { id: 'api-int-cfg1', name: 'Update Integration Settings', action: 'order.update' },
-          { id: 'api-int-cfg2', name: 'Verify Integration Connectivity', action: 'inventory.onhand.read' }
-        ]}
-      ]}
+      {
+        id: 'sys-role-management', label: 'Role Management', type: 'menu', children: [
+          { id: 'sys-role-view', label: 'View', type: 'action', apiNames: [
+            { id: 'api-sys-role-view', name: 'Role List Query', action: 'order.read' },
+            { id: 'api-sys-role-detail', name: 'Role Detail Query', action: 'order.read' }
+          ]},
+          { id: 'sys-role-create', label: 'Create', type: 'action', apiNames: [
+            { id: 'api-sys-role-create', name: 'Create Role', action: 'order.update' }
+          ]},
+          { id: 'sys-role-edit', label: 'Edit', type: 'action', apiNames: [
+            { id: 'api-sys-role-edit', name: 'Update Role Permissions', action: 'order.update' }
+          ]},
+          { id: 'sys-role-delete', label: 'Delete', type: 'action', apiNames: [
+            { id: 'api-sys-role-delete', name: 'Delete Role', action: 'order.update' }
+          ]}
+        ]
+      },
+      {
+        id: 'sys-account-management', label: 'Account Management', type: 'menu', children: [
+          { id: 'sys-acc-view', label: 'View', type: 'action', apiNames: [
+            { id: 'api-sys-acc-view', name: 'Account List Query', action: 'order.read' },
+            { id: 'api-sys-acc-detail', name: 'Account Detail Query', action: 'order.read' }
+          ]},
+          { id: 'sys-acc-create', label: 'Create', type: 'action', apiNames: [
+            { id: 'api-sys-acc-create', name: 'Create User Account', action: 'order.update' }
+          ]},
+          { id: 'sys-acc-edit', label: 'Edit', type: 'action', apiNames: [
+            { id: 'api-sys-acc-edit', name: 'Update Account Information', action: 'order.update' }
+          ]},
+          { id: 'sys-acc-disable', label: 'Disable', type: 'action', apiNames: [
+            { id: 'api-sys-acc-disable', name: 'Disable User Account', action: 'order.update' }
+          ]}
+        ]
+      },
+      {
+        id: 'sys-address-book', label: 'Address Book', type: 'menu', children: [
+          { id: 'sys-addr-view', label: 'View', type: 'action', apiNames: [
+            { id: 'api-sys-addr-view', name: 'Address Book List Query', action: 'order.read' }
+          ]},
+          { id: 'sys-addr-create', label: 'Create', type: 'action', apiNames: [
+            { id: 'api-sys-addr-create', name: 'Create Address Entry', action: 'order.update' }
+          ]},
+          { id: 'sys-addr-edit', label: 'Edit', type: 'action', apiNames: [
+            { id: 'api-sys-addr-edit', name: 'Update Address Entry', action: 'order.update' }
+          ]},
+          { id: 'sys-addr-delete', label: 'Delete', type: 'action', apiNames: [
+            { id: 'api-sys-addr-delete', name: 'Delete Address Entry', action: 'order.update' }
+          ]}
+        ]
+      },
+      {
+        id: 'sys-settings', label: 'Settings', type: 'menu', noApi: true, children: [
+          { id: 'sys-settings-view', label: 'View', type: 'action' },
+          { id: 'sys-settings-edit', label: 'Edit', type: 'action' }
+        ]
+      }
     ]
   }
 ]

@@ -238,9 +238,11 @@ const TreeNode = defineComponent({
       const allActions = node.children!.every(c => c.type === 'action')
 
       if (isMenu && allActions) {
+        // 如果该 menu 节点标记 noApi，只显示左栏（无 API 权限列）
+        const noApi = !!(node as any).noApi
         // 左栏：功能按钮；右栏：对应 API 名称
         const leftCol = h('div', {
-          style: { flex: '1', borderRight: '1px solid #f0f2f5', padding: '6px 0 6px 0' }
+          style: { flex: '1', borderRight: noApi ? 'none' : '1px solid #f0f2f5', padding: '6px 0 6px 0' }
         }, node.children!.map(action =>
           h('div', {
             style: {
@@ -295,16 +297,20 @@ const TreeNode = defineComponent({
             borderBottom: '1px solid #ebeef5',
             background: '#fafbfc',
           }
-        }, [
-          h('div', { style: { flex: '1', padding: '5px 8px 5px ' + ((depth + 1) * 20 + 8 + 28) + 'px', fontSize: '12px', fontWeight: '600', color: '#909399', borderRight: '1px solid #f0f2f5' } }, '功能按钮'),
-          h('div', { style: { flex: '1', padding: '5px 8px', fontSize: '12px', fontWeight: '600', color: '#909399' } }, 'API 名称'),
+        }, noApi ? [
+          h('div', { style: { flex: '1', padding: '5px 8px 5px ' + ((depth + 1) * 20 + 8 + 28) + 'px', fontSize: '12px', fontWeight: '600', color: '#909399' } }, '页面功能'),
+        ] : [
+          h('div', { style: { flex: '1', padding: '5px 8px 5px ' + ((depth + 1) * 20 + 8 + 28) + 'px', fontSize: '12px', fontWeight: '600', color: '#909399', borderRight: '1px solid #f0f2f5' } }, '页面功能'),
+          h('div', { style: { flex: '1', padding: '5px 8px', fontSize: '12px', fontWeight: '600', color: '#909399' } }, 'API 权限'),
         ])
 
         const twoCol = h('div', {
           style: { border: '1px solid #ebeef5', borderRadius: '4px', margin: `4px ${(depth + 1) * 20 - 12}px 6px ${(depth + 1) * 20 + 8}px`, overflow: 'hidden' }
         }, [
           colHeader,
-          h('div', { style: { display: 'flex' } }, [leftCol, rightCol])
+          noApi
+            ? h('div', [leftCol])
+            : h('div', { style: { display: 'flex' } }, [leftCol, rightCol])
         ])
 
         return h('div', [row, twoCol])
