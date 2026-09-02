@@ -48,6 +48,10 @@
         <!-- 单一页签：菜单功能/API权限 -->
         <div class="perm-tab-bar">
           <span class="perm-tab-label active">菜单功能/API权限</span>
+          <span class="api-notice">
+            <el-icon class="notice-icon"><InfoFilled /></el-icon>
+            此处配置的 API 权限仅对 Client Portal 本体及 Agent 生效，不影响页面功能。
+          </span>
         </div>
 
         <!-- 权限树 -->
@@ -71,7 +75,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElCheckbox } from 'element-plus'
+import { ElMessage, ElCheckbox, ElIcon } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 import { useRolesStore } from '@/stores/roles'
 import { cpMenuTree, type MenuNode } from '@/mock/menuTree'
 
@@ -386,8 +391,33 @@ const TreeNode = defineComponent({
 .perm-tab-bar {
   padding: 0 20px;
   border-bottom: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-shrink: 0;
   margin-top: 10px;
+}
+
+/* API 权限说明文案 */
+.api-notice {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--el-color-primary);
+  font-weight: 500;
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  max-width: 520px;
+}
+.notice-icon {
+  font-size: 13px;
+  margin-right: 5px;
+  flex-shrink: 0;
+  color: var(--el-color-primary);
 }
 .perm-tab-label {
   display: inline-block;
